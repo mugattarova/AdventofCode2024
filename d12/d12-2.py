@@ -141,7 +141,7 @@ def group_into_shapes(points):
   
 def get_input():
   inp = []
-  with open("test", 'r') as file:
+  with open("input", 'r') as file:
     for line in file:
       matches = list(list(line.strip()))
       inp.append(matches)
