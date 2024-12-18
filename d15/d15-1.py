@@ -1,92 +1,52 @@
-def get_input():
-  warehouse = []
-  instr = []
-  instr_mode = False
-  with open("input", 'r') as file:
-    for line in file:
-      if not instr_mode:
-        if line.strip() == "":
-          instr_mode = True
-          continue
-        warehouse.append(list(line.strip()))
-        if '@' in warehouse[-1]:
-          start = (len(warehouse)-1, warehouse[-1].index('@'))
-          warehouse[-1][warehouse[-1].index('@')] = '.'
-      else:
-        for e in list((line.strip())):
-          instr.append(e)
-  return warehouse, instr, start
+from collections import deque
+import os
 
-def print_grid(warehouse, roboty, robotx):
-  for i in range(len(warehouse)):
-    for j in range(len(warehouse[0])):
-      if i==roboty and j==robotx:
+def to_dir(ch):
+  return [-1, 1j, 1, -1j]['^>v<'.index(ch)]
+
+def print_grid(grid, robot):
+  imax, jmax = int(max(grid.keys(), key=lambda n:n.real).real), int(max(grid.keys(), key=lambda n:n.imag).imag)
+  os.system('cls' if os.name == 'nt' else 'clear')
+  for i in range(imax+2):
+    for j in range(jmax+2):
+      if i+j*1j == robot:
         print('@', end='')
+      elif i+j*1j not in grid.keys():
+        print('#', end='')
       else:
-        print(warehouse[i][j], end='')
+        print(grid[i+j*1j], end='')
     print()
 
-def move_once(dir, cury, curx):
-  maxy = len(warehouse)
-  maxx = len(warehouse[0])
-  match dir:
-    case '^':
-      if (0 <= cury-1 <= maxy) and (0 <= curx <= maxx):
-        return cury-1, curx
-      return None
-    case 'v':
-      if (0 <= cury+1 <= maxy) and (0 <= curx <= maxx):
-        return cury+1, curx
-      return None     
-    case '>':
-      if (0 <= cury <= maxy) and (0 <= curx+1 <= maxx):
-        return cury, curx+1
-      return None
-    case '<':
-      if (0 <= cury <= maxy) and (0 <= curx-1 <= maxx):
-        return cury, curx-1
-    case _:
-      raise Exception("direction is represented wrong")
+_grid, _moves = open('input', 'r').read().split('\n\n')
 
-warehouse, instr, (roboty, robotx) = get_input()
+grid = {i+j*1j: c for i,r in enumerate(_grid.split())
+                  for j,c in enumerate(r.strip()) if c != '#'}
 
-box = False
-
-for i in range(len(instr)):
-  # print(str(i)+" cycle "+instr[i])
-  # print_grid(warehouse, roboty, robotx)
-  cury, curx = roboty, robotx
-  dir = instr[i]
-  cursym = warehouse[cury][curx]
-  while cursym != '#':
-    coords = move_once(dir, cury, curx)
-    if coords != None:
-      newy, newx = coords
-    else:
-      box = False
-      continue
-    cursym = warehouse[newy][newx]
-    match cursym:
-      case '.':
-        roboty, robotx = move_once(dir, roboty, robotx)
-        warehouse[roboty][robotx] = '.'
-        cursym = '#'
-        if box:
-          warehouse[newy][newx] = 'O'
-          box = False
-      case 'O':
-        box = True
-      case '#':
-        box = False
-        continue
+robot = [x for x in grid if grid[x] == '@'][0]
+grid[robot] = '.'
+moves = [l.replace('\n', '') for l in _moves]
+print_grid(grid, robot)
+while moves:
+  # if len(moves)%100:
+  move = to_dir(moves.pop(0))                                         # get cardinal move
+  stack = deque(); i=1
+  while True:                                # moves once every iteration, saves the current position
+    cur_pos = (robot + move*i)
+    if cur_pos not in grid:                                         # if hit an obstacle
+      stack = deque()                                                 # empty stack
+      i=0                                                            # reset i
+      break
+    elif grid[cur_pos] == '.':                                                # if position is free to move in
+      while stack:                                                    # go down the box stack
+        grid[box := stack.pop()] = '.'                                # old position is empty
+        grid[box+move] = 'O'                                          # new position is a box
+      robot += move                                                   # move the robot                                    
+      break
+    elif grid[cur_pos] == 'O':                                              # if this a box
+      stack.append(cur_pos)                                           # push it onto the stack
     
-    cury, curx = newy, newx
+    i+=1                                                              # increments the move number
+  # print_grid(grid, robot)
 
-
-output = 0
-for i in range(len(warehouse)):
-  for j in range(len(warehouse[0])):
-    if warehouse[i][j] == 'O':
-      output += 100*i + j
-
-print(output)
+print_grid(grid, robot)
+print(sum([(x.real*100+x.imag) for x in grid if grid[x]=='O']))
