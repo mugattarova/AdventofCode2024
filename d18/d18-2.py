@@ -3,7 +3,6 @@ from collections import defaultdict
 from heapq import heappop, heappush
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
-st = time.time()
 
 def print_grid(grid, scores, q):
   front = [coord for( _, _, coord) in q]
@@ -98,7 +97,3 @@ for i in range(total+1, len(bytes)):
   else: 
     print(f"{bytes[i].imag},{bytes[i].real}")
     break
-  
-
-
-print(f"--- {time.time() - st} seconds ---")
