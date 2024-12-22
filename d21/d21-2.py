@@ -1,13 +1,6 @@
 import numbers
 from collections import defaultdict
-
-class keydefaultdict(defaultdict):
-  def __missing__(self, key):
-    if self.default_factory is None:
-      raise KeyError( key )
-    else:
-      ret = self[key] = self.default_factory(key)
-      return ret
+from functools import cache
 
 def num_to_dir(code):
   out = defaultdict(int)
@@ -57,6 +50,7 @@ def append_non0(out, elem):
   else:
     out+=elem
 
+@cache
 def dir_to_dir_dict(code):
   out = []
   code = list(code)
@@ -96,11 +90,10 @@ def dir_to_dir_dict(code):
   return out
 
 def dir_to_dir(instr: dict):
-  global unfold_dirs
   counter = defaultdict(int)
   for line in instr.keys():
     if instr[line]!=0:
-      for unfold_line in unfold_dirs[line]:
+      for unfold_line in dir_to_dir_dict(line):
         counter[unfold_line] += instr[line]
   return counter
 
@@ -118,22 +111,15 @@ def count_len(code):
     out+=snip_count*code[snip]
   return out
 
-def get_num(code):
-  num = ''.join(str(x) for x in code[:-1])
-  return int(num)
-
 codes = [x for x in open('input', 'r').read().strip().split('\n')]
 numpad = { 7:0+0j, 8:0+1j, 9:0+2j, 4:1+0j, 5:1+1j, 6:1+2j, 1:2+0j, 2:2+1j, 3:2+2j, 0:3+1j, 'A':3+2j }
 robopad = { -1:0+1j, 'A':0+2j, -1j:1+0j, 1:1+1j, 1j:1+2j }
-unfold_dirs = keydefaultdict(dir_to_dir_dict)
 
 output = 0
 for code in codes:
-  code = [int(x) for x in code if x!='A']+['A']
-  num = get_num(code)
-  code = num_to_dir(code)
+  num = int(code[:-1])
+  code = num_to_dir([int(x) for x in code if x!='A']+['A'])
   for i in range(25):
     code = dir_to_dir(code)
   output += num*count_len(code)
-
 print(output)
